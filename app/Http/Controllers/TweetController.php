@@ -13,7 +13,7 @@ class TweetController extends Controller
     public function index()
     {
         //
-        $tweets = Tweet::with('user')->latest()->get();
+        $tweets = Tweet::with(['user', 'liked'])->latest()->get();
         return view('tweets.index', compact('tweets'));
     }
 
@@ -46,7 +46,7 @@ class TweetController extends Controller
      */
     public function show(Tweet $tweet)
     {
-        //
+        return view('tweets.show', compact('tweet'));
     }
 
     /**
@@ -54,7 +54,7 @@ class TweetController extends Controller
      */
     public function edit(Tweet $tweet)
     {
-        //
+        return view('tweets.edit', compact('tweet'));
     }
 
     /**
@@ -62,7 +62,14 @@ class TweetController extends Controller
      */
     public function update(Request $request, Tweet $tweet)
     {
-        //
+        // バリデーション
+        $request->validate([
+            'tweet' => 'required|max:255',
+        ]);
+        // データの更新
+        $tweet->update($request->only('tweet'));
+        // 詳細画面へのリダイレクト
+        return redirect()->route('tweets.show', $tweet);
     }
 
     /**
@@ -70,6 +77,8 @@ class TweetController extends Controller
      */
     public function destroy(Tweet $tweet)
     {
-        //
+        $tweet->delete();
+        // 一覧画面へリダイレクト
+        return redirect()->route('tweets.index');
     }
 }

@@ -11,11 +11,17 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-
+    // 一対多の設定 自分が一
     public function tweets()
     {
         return $this->hasMany(Tweet::class);
     }
+    // 多対多の設定
+      public function likes()
+    {
+      return $this->belongsToMany(Tweet::class)->withTimestamps();
+    }
+
 
     /**
      * The attributes that are mass assignable.
