@@ -16,10 +16,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Tweet::class);
     }
-    // 多対多の設定
-      public function likes()
+
+    public function comments()
     {
-      return $this->belongsToMany(Tweet::class)->withTimestamps();
+        return $this->hasMany(Comment::class);
+    }
+
+    // 多対多の設定
+    public function likes()
+    {
+        return $this->belongsToMany(Tweet::class)->withTimestamps();
     }
 
 
