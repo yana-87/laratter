@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Tweet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,58 +13,75 @@ use App\Models\User;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
-    {
-        return view('profile.show', compact('user'));
+  /**
+   * Display the specified resource.
+   */
+  public function show(User $user)
+  {
+    if (auth()->user()->is($user)) {
+      $tweets = Tweet::query()
+        ->where('user_id', $user->id)  // 自分のツイート
+        ->orWhereIn('user_id', $user->follows->pluck('id')) // フォローしているユーザーのツイート
+        ->latest()
+        ->paginate(10);
+    } else {
+      // 他のユーザーの場合、そのユーザーのツイートのみを取得
+      $tweets = $user
+        ->tweets()
+        ->latest()
+        ->paginate(10);
     }
 
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
-    {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+    // ユーザーのフォロワーとフォローしているユーザーを取得
+    $user->load(['follows', 'followers']);
+
+    return view('profile.show', compact('user', 'tweets'));
+  }
+
+  /**
+   * Display the user's profile form.
+   */
+  public function edit(Request $request): View
+  {
+    return view('profile.edit', [
+      'user' => $request->user(),
+    ]);
+  }
+
+  /**
+   * Update the user's profile information.
+   */
+  public function update(ProfileUpdateRequest $request): RedirectResponse
+  {
+    $request->user()->fill($request->validated());
+
+    if ($request->user()->isDirty('email')) {
+      $request->user()->email_verified_at = null;
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
-        $request->user()->fill($request->validated());
+    $request->user()->save();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+    return Redirect::route('profile.edit')->with('status', 'profile-updated');
+  }
 
-        $request->user()->save();
+  /**
+   * Delete the user's account.
+   */
+  public function destroy(Request $request): RedirectResponse
+  {
+    $request->validateWithBag('userDeletion', [
+      'password' => ['required', 'current_password'],
+    ]);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
-    }
+    $user = $request->user();
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
+    Auth::logout();
 
-        $user = $request->user();
+    $user->delete();
 
-        Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
 
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
-    }
+    return Redirect::to('/');
+  }
 }
