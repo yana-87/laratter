@@ -14,6 +14,16 @@
           <div class="text-gray-600 dark:text-gray-400 text-sm">
             <p>アカウント作成日時: {{ $user->created_at->format('Y-m-d H:i') }}</p>
           </div>
+          <!-- 自己紹介文 -->
+          <div class="mt-2 p-2 border-l-4 border-indigo-500 bg-gray-100 dark:bg-gray-700 rounded-r-lg">
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-400">自己紹介文:</p>
+            @if ($user->bio)
+            <p class="text-sm whitespace-pre-wrap">{{ $user->bio }}</p>
+            @else
+            <p class="text-sm text-gray-500 dark:text-gray-400">設定されていません。</p>
+            @endif
+          </div>
+
           @if ($user->id !== auth()->id())
           <div class="text-gray-900 dark:text-gray-100">
             @if ($user->followers->contains(auth()->id()))
